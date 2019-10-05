@@ -1,18 +1,38 @@
+import sys
 from LIGFX import *
-from sklearn.metrics import confusion_matrix
+from sklearn.svm import SVC
 
 
-def main():
-    ligfx_analysis = LIGFX('feature_map.csv')
+def prepare_dataset(input_data_filename):
+    ligfx_analysis = LIGFX(input_data_filename)
     ligfx_analysis.holdout()
+    return ligfx_analysis
 
-    ligfx_analysis.create_classifier()
+
+def run_full_analysis(ligfx_analysis):
     ligfx_analysis.run_training()
     ligfx_analysis.run_prediction()
+    ligfx_analysis.get_confusion_matrix()
 
-    conf_mat = confusion_matrix(ligfx_analysis.test_y, ligfx_analysis.predicted_y)
-    print(conf_mat)
-    
+
+def main(input_data_filename):
+    ligfx_analysis = prepare_dataset(input_data_filename)
+
+    #   Logistic Regression
+    ligfx_analysis.create_classifier()
+    run_full_analysis(ligfx_analysis)
+    print("\nLR:")
+    print(ligfx_analysis.conf_mat)
+
+    #   SVM
+    ligfx_analysis.create_classifier(SVC(kernel='linear'))
+    run_full_analysis(ligfx_analysis)
+    print("\nSVM:")
+    print(ligfx_analysis.conf_mat)
+
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) != 2:
+        print("Usage: %s <input data filename>" % sys.argv[0])
+        sys.exit()
+    main(sys.argv[1])

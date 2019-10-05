@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix
 
 
 class LIGFX:
@@ -17,8 +18,10 @@ class LIGFX:
         self.training_y = None
         self.test_x = None
         self.test_y = None
-        self.predicted_y = None
         self.classifier = None
+        self.trained = False
+        self.predicted_y = None
+        self.conf_mat = None
 
     @staticmethod
     def __read_input(input_data_filename):
@@ -37,7 +40,7 @@ class LIGFX:
         self.test_x = x_test
         self.test_y = y_test
 
-    def create_classifier(self, method=LogisticRegression()):
+    def create_classifier(self, method=LogisticRegression(solver="lbfgs")):
         self.classifier = method
 
     def run_training(self):
@@ -48,7 +51,20 @@ class LIGFX:
             print("Warning: machine learning method not defined.")
             return 1
         self.classifier.fit(self.training_x, self.training_y)
+        self.trained = True
+        return 0
 
     def run_prediction(self):
-        self.predicted_y = self.classifier.predict(self.test_x)
+        if self.trained:
+            self.predicted_y = self.classifier.predict(self.test_x)
+            return 0
+        else:
+            print("Warning: the model was not trained.")
+            return 1
 
+    def get_confusion_matrix(self):
+        if self.predicted_y is None:
+            print("Warning: prediction was not run.")
+            return 1
+        self.conf_mat = confusion_matrix(self.test_y, self.predicted_y)
+        return 0
