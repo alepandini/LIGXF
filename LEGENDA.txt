@@ -1,0 +1,6 @@
+
+le feature sono annotate usando il cluster di riferimento nel nome, per esempio c1_MC sarebbe cluster più popolato usando come riferimento sia il M domain che il C domain, aggiungendo:
+
+score -  per il docking score
+rms   -  per l RMS sugli score di docking tra le pose dello stesso ligando ( 10 pose per ogni ligando)
+rmsd  -  per l'rmsd del ligando nella tasca tra le varie pose.
