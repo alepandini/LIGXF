@@ -9,26 +9,18 @@ def prepare_dataset(input_data_filename):
     return ligfx_analysis
 
 
-def run_full_analysis(ligfx_analysis):
-    ligfx_analysis.run_training()
-    ligfx_analysis.run_prediction()
-    ligfx_analysis.get_confusion_matrix()
-
-
 def main(input_data_filename):
     ligfx_analysis = prepare_dataset(input_data_filename)
 
     #   Logistic Regression
     ligfx_analysis.create_classifier()
-    run_full_analysis(ligfx_analysis)
-    print("\nLR:")
-    print(ligfx_analysis.conf_mat)
+    ligfx_analysis.run_default_analysis()
+    ligfx_analysis.print_performance("LR")
 
     #   SVM
     ligfx_analysis.create_classifier(SVC(kernel='linear'))
-    run_full_analysis(ligfx_analysis)
-    print("\nSVM:")
-    print(ligfx_analysis.conf_mat)
+    ligfx_analysis.run_default_analysis()
+    ligfx_analysis.print_performance("SVM")
 
 
 if __name__ == '__main__':

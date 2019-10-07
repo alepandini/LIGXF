@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
 
 
 class LIGFX:
@@ -22,6 +22,8 @@ class LIGFX:
         self.trained = False
         self.predicted_y = None
         self.conf_mat = None
+        self.accuracy = None
+        self.F1_score = None
 
     @staticmethod
     def __read_input(input_data_filename):
@@ -62,9 +64,41 @@ class LIGFX:
             print("Warning: the model was not trained.")
             return 1
 
+    def get_performance(self):
+        self.get_confusion_matrix()
+        self.get_accuracy()
+        self.get_F1()
+
+    def run_default_analysis(self):
+        self.run_training()
+        self.run_prediction()
+        self.get_performance()
+
+    def print_performance(self, model_name=""):
+        if self.accuracy is None:
+            print("Warning: prediction was not run.")
+            return 1
+        print('LIGFX:-------------------------------------------------')
+        print('LIGFX:Model     %s' % model_name)
+        print('LIGFX:Accuracy  %4.2f' % self.accuracy)
+        print('LIGFX:F1-score  %4.2f' % self.F1_score)
+        print('LIGFX:Confusion matrix')
+        for i in range(self.conf_mat.shape[0]):
+            print('LIGFX:       ', end='')
+            for j in range(self.conf_mat.shape[1]):
+                print('%5d ' % self.conf_mat[i, j], end='')
+            print()
+
     def get_confusion_matrix(self):
         if self.predicted_y is None:
             print("Warning: prediction was not run.")
             return 1
         self.conf_mat = confusion_matrix(self.test_y, self.predicted_y)
         return 0
+
+    def get_accuracy(self):
+        self.accuracy = accuracy_score(self.test_y, self.predicted_y)
+
+    def get_F1(self):
+        self.F1_score = f1_score(self.test_y, self.predicted_y)
+
