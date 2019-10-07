@@ -1,6 +1,7 @@
 import sys
 from LIGFX import *
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 
 
 def prepare_dataset(input_data_filename):
@@ -21,6 +22,11 @@ def main(input_data_filename):
     ligfx_analysis.create_classifier(SVC(kernel='linear'))
     ligfx_analysis.run_default_analysis()
     ligfx_analysis.print_performance("SVM")
+
+    #   RF
+    ligfx_analysis.create_classifier(RandomForestClassifier(n_estimators=1000))
+    ligfx_analysis.run_default_analysis()
+    ligfx_analysis.print_performance("RF")
 
 
 if __name__ == '__main__':
