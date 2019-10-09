@@ -13,20 +13,17 @@ def prepare_dataset(input_data_filename):
 def main(input_data_filename):
     ligfx_analysis = prepare_dataset(input_data_filename)
 
-    #   Logistic Regression
-    ligfx_analysis.create_classifier()
-    ligfx_analysis.run_default_analysis()
-    ligfx_analysis.write_performance()
+    classifier_dict = {
+       'LR': LogisticRegression(solver="lbfgs"),
+       'SVM': SVC(kernel='linear'),
+       'RF': RandomForestClassifier(n_estimators=1000)
+    }
 
-    #   SVM
-    ligfx_analysis.create_classifier(SVC(kernel='linear'), 'SVM')
-    ligfx_analysis.run_default_analysis()
-    ligfx_analysis.write_performance()
-
-    #   RF
-    ligfx_analysis.create_classifier(RandomForestClassifier(n_estimators=1000), 'RF')
-    ligfx_analysis.run_default_analysis()
-    ligfx_analysis.write_performance()
+    for (classifier_name, classifier_method) in classifier_dict.items():
+        ligfx_analysis.create_classifier(classifier_method, classifier_name)
+        ligfx_analysis.run_default_analysis()
+        ligfx_analysis.run_cross_validation()
+        # ligfx_analysis.cross_validation_performance.write_performance_csv("cross_val_%s.csv" % classifier_name)
 
 
 if __name__ == '__main__':

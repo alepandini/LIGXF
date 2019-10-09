@@ -1,17 +1,17 @@
 from sys import stdout
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_validate
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, \
-    accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score, matthews_corrcoef
+    accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score
 
 performance_measures = {
     'accuracy': accuracy_score,
-    'balanced accuracy': balanced_accuracy_score,
+    'balanced_accuracy': balanced_accuracy_score,
     'precision': precision_score,
     'recall': recall_score,
-    'f1_score': f1_score,
-    'Matthews corr coeff': matthews_corrcoef
+    'f1': f1_score
 }
 
 
@@ -50,6 +50,40 @@ class LIGFXPerformance:
             file_handle.close()
 
 
+class LIGFXCrossValPerformance:
+    def __init__(self, ligfx_object, n_fold=10):
+        self.LIGFX = ligfx_object
+        self.performance_table = self.cross_validation(n_fold)
+
+    def cross_validation(self, n_fold=10):
+        scoring = list(performance_measures.keys())
+        cv_scores = cross_validate(self.LIGFX.classifier, self.LIGFX.input_x, self.LIGFX.input_y,
+                                   cv=n_fold, scoring=scoring, return_train_score=True)
+        cv_data = pd.DataFrame.from_dict(cv_scores)
+        return cv_data
+
+    def write_performance(self, output_filename=None):
+        file_handle = open(output_filename, 'a') if output_filename else stdout
+
+        t_performance_table = self.performance_table.transpose()
+
+        file_handle.write('LIGFX:-------------------------------------------------\n')
+        file_handle.write('LIGFX: model                  %s\n' % self.LIGFX.classifier_name)
+        file_handle.write('LIGFX: cross validation\n')
+        for i in range(t_performance_table.shape[0]):
+            file_handle.write('LIGFX: %-25s ' % t_performance_table.index[i])
+            for j in range(t_performance_table.shape[1]):
+                file_handle.write("%5.2f" % t_performance_table.iloc[i, j])
+            file_handle.write("\n")
+
+        if file_handle is not stdout:
+            file_handle.close()
+
+    def write_performance_csv(self, output_filename=None):
+        if output_filename is not None:
+            self.performance_table.to_csv(output_filename)
+
+
 class LIGFX:
     def __init__(self, input_data_filename, normalise=True):
         self.input_data = self.__read_input(input_data_filename)
@@ -69,6 +103,7 @@ class LIGFX:
         self.trained = False
         self.predicted_y = None
         self.performance = None
+        self.cross_validation_performance = None
 
     @staticmethod
     def __read_input(input_data_filename):
@@ -110,13 +145,11 @@ class LIGFX:
             print("Warning: the model was not trained.")
             return 1
 
-    def run_default_analysis(self):
+    def run_default_analysis(self, output_filename=None):
         self.run_training()
         self.run_prediction()
+        self.performance.write_performance(output_filename)
 
-    def write_performance(self, output_filename=None):
-        if self.trained:
-            self.performance.write_performance(output_filename)
-        else:
-            print("Warning: the model was not trained.")
-            return 1
+    def run_cross_validation(self, n_fold=10, output_filename=None):
+        self.cross_validation_performance = LIGFXCrossValPerformance(self, n_fold)
+        self.cross_validation_performance.write_performance(output_filename)
