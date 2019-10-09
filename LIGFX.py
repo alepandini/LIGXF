@@ -1,3 +1,4 @@
+from sys import stdout
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
@@ -27,17 +28,22 @@ class LIGFXPerformance:
         score = performance_function(self.LIGFX.test_y, self.LIGFX.predicted_y)
         return score
 
-    def print_performance(self, model_name=""):
-        print('LIGFX:-------------------------------------------------')
-        print('LIGFX: model                  %s' % model_name)
+    def write_performance(self, output_filename=None):
+        file_handle = open(output_filename, 'a') if output_filename else stdout
+
+        file_handle.write('LIGFX:-------------------------------------------------\n')
+        file_handle.write('LIGFX: model                  %s\n' % self.LIGFX.classifier_name)
         for (k, v) in self.performance_scores.items():
-            print('LIGFX: %-20s   %4.2f' % (k,v))
-        print('LIGFX: Confusion matrix')
+            file_handle.write('LIGFX: %-20s   %4.2f\n' % (k, v))
+        file_handle.write('LIGFX: Confusion matrix\n')
         for i in range(self.conf_mat.shape[0]):
-            print('LIGFX:                     ', end='')
+            file_handle.write('LIGFX:                     ')
             for j in range(self.conf_mat.shape[1]):
-                print('%5d ' % self.conf_mat[i, j], end='')
-            print()
+                file_handle.write('%5d ' % self.conf_mat[i, j])
+            file_handle.write("\n")
+
+        if file_handle is not stdout:
+            file_handle.close()
 
 
 class LIGFX:
@@ -55,6 +61,7 @@ class LIGFX:
         self.test_x = None
         self.test_y = None
         self.classifier = None
+        self.classifier_name = None
         self.trained = False
         self.predicted_y = None
         self.performance = None
@@ -76,8 +83,9 @@ class LIGFX:
         self.test_x = x_test
         self.test_y = y_test
 
-    def create_classifier(self, method=LogisticRegression(solver="lbfgs")):
+    def create_classifier(self, method=LogisticRegression(solver="lbfgs"), classifier_name='LR'):
         self.classifier = method
+        self.classifier_name = classifier_name
 
     def run_training(self):
         if (self.training_x is None) or (self.training_y is None):
@@ -102,9 +110,9 @@ class LIGFX:
         self.run_training()
         self.run_prediction()
 
-    def print_performance(self, model_name=""):
+    def write_performance(self, output_filename=None):
         if self.trained:
-            self.performance.print_performance(model_name)
+            self.performance.write_performance(output_filename)
         else:
             print("Warning: the model was not trained.")
             return 1

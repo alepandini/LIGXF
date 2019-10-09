@@ -16,17 +16,17 @@ def main(input_data_filename):
     #   Logistic Regression
     ligfx_analysis.create_classifier()
     ligfx_analysis.run_default_analysis()
-    ligfx_analysis.print_performance("LR")
+    ligfx_analysis.write_performance()
 
     #   SVM
-    ligfx_analysis.create_classifier(SVC(kernel='linear'))
+    ligfx_analysis.create_classifier(SVC(kernel='linear'), 'SVM')
     ligfx_analysis.run_default_analysis()
-    ligfx_analysis.print_performance("SVM")
+    ligfx_analysis.write_performance()
 
     #   RF
-    ligfx_analysis.create_classifier(RandomForestClassifier(n_estimators=1000))
+    ligfx_analysis.create_classifier(RandomForestClassifier(n_estimators=1000), 'RF')
     ligfx_analysis.run_default_analysis()
-    ligfx_analysis.print_performance("RF")
+    ligfx_analysis.write_performance()
 
 
 if __name__ == '__main__':
