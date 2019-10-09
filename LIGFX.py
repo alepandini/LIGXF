@@ -1,43 +1,43 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix, accuracy_score, f1_score
+from sklearn.metrics import confusion_matrix, accuracy_score, balanced_accuracy_score, f1_score
+
+performance_measures = {
+    'accuracy': accuracy_score,
+    'balanced_accuracy': balanced_accuracy_score,
+    'f1_score': f1_score
+}
 
 
 class LIGFXPerformance:
     def __init__(self, ligfx_object):
         self.LIGFX = ligfx_object
         self.conf_mat = self.get_confusion_matrix()
-        self.accuracy = self.get_accuracy()
-        self.F1_score = self.get_f1()
-
-    def print_performance(self, model_name=""):
-        if self.accuracy is None:
-            print("Warning: prediction was not run.")
-            return 1
-        else:
-            print('LIGFX:-------------------------------------------------')
-            print('LIGFX:Model     %s' % model_name)
-            print('LIGFX:Accuracy  %4.2f' % self.accuracy)
-            print('LIGFX:F1-score  %4.2f' % self.F1_score)
-            print('LIGFX:Confusion matrix')
-            for i in range(self.conf_mat.shape[0]):
-                print('LIGFX:       ', end='')
-                for j in range(self.conf_mat.shape[1]):
-                    print('%5d ' % self.conf_mat[i, j], end='')
-                print()
+        self.performance_scores = {
+            k: self.get_performance_score(v)
+            for (k, v) in performance_measures.items()
+        }
 
     def get_confusion_matrix(self):
         conf_mat = confusion_matrix(self.LIGFX.test_y, self.LIGFX.predicted_y)
         return conf_mat
 
-    def get_accuracy(self):
-        accuracy = accuracy_score(self.LIGFX.test_y, self.LIGFX.predicted_y)
-        return accuracy
+    def get_performance_score(self, performance_function):
+        score = performance_function(self.LIGFX.test_y, self.LIGFX.predicted_y)
+        return score
 
-    def get_f1(self):
-        f1 = f1_score(self.LIGFX.test_y, self.LIGFX.predicted_y)
-        return f1
+    def print_performance(self, model_name=""):
+        print('LIGFX:-------------------------------------------------')
+        print('LIGFX: model                  %s' % model_name)
+        for (k, v) in self.performance_scores.items():
+            print('LIGFX: %-20s   %4.2f' % (k,v))
+        print('LIGFX: Confusion matrix')
+        for i in range(self.conf_mat.shape[0]):
+            print('LIGFX:                     ', end='')
+            for j in range(self.conf_mat.shape[1]):
+                print('%5d ' % self.conf_mat[i, j], end='')
+            print()
 
 
 class LIGFX:
