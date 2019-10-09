@@ -2,12 +2,16 @@ from sys import stdout
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix, accuracy_score, balanced_accuracy_score, f1_score
+from sklearn.metrics import confusion_matrix, \
+    accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score, matthews_corrcoef
 
 performance_measures = {
     'accuracy': accuracy_score,
-    'balanced_accuracy': balanced_accuracy_score,
-    'f1_score': f1_score
+    'balanced accuracy': balanced_accuracy_score,
+    'precision': precision_score,
+    'recall': recall_score,
+    'f1_score': f1_score,
+    'Matthews corr coeff': matthews_corrcoef
 }
 
 
