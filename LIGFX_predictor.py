@@ -13,18 +13,23 @@ def prepare_dataset(input_data_filename):
 def main(input_data_filename):
     ligfx_analysis = prepare_dataset(input_data_filename)
 
+    #ligfx_analysis.run_pca_curve()
+    ligfx_pca=ligfx_analysis.run_pca(3)
+
+    ligfx_pca.write_contribution(0)
+
     classifier_dict = {
        'LR': LogisticRegression(solver="lbfgs"),
        'SVM': SVC(kernel='linear'),
        'RF': RandomForestClassifier(n_estimators=1000)
     }
-
+'''
     for (classifier_name, classifier_method) in classifier_dict.items():
         ligfx_analysis.create_classifier(classifier_method, classifier_name)
         ligfx_analysis.run_default_analysis()
         ligfx_analysis.run_cross_validation()
         # ligfx_analysis.cross_validation_performance.write_performance_csv("cross_val_%s.csv" % classifier_name)
-
+'''
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:

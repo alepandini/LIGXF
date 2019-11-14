@@ -1,7 +1,10 @@
 from sys import stdout
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_validate
+from sklearn.model_selection import KFold
+from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, \
     accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score
@@ -57,6 +60,7 @@ class LIGFXCrossValPerformance:
 
     def cross_validation(self, n_fold=10):
         scoring = list(performance_measures.keys())
+
         cv_scores = cross_validate(self.LIGFX.classifier, self.LIGFX.input_x, self.LIGFX.input_y,
                                    cv=n_fold, scoring=scoring, return_train_score=True)
         cv_data = pd.DataFrame.from_dict(cv_scores)
@@ -83,6 +87,31 @@ class LIGFXCrossValPerformance:
         if output_filename is not None:
             self.performance_table.to_csv(output_filename)
 
+class LIGFXPca:
+    def __init__(self,ligfx_object,n_components):
+        self.LIGFX = ligfx_object
+        self.pcadata,self.variance,self.components=self.principal_component(n_components)
+
+    def principal_component(self,n_components):
+        pca = PCA(n_components= n_components, svd_solver='arpack')
+        components=pca.fit_transform(self.LIGFX.input_x)
+        list_col= [ 'principal component %d' % i for i in range(1,n_components + 1)]
+        principalDf = pd.DataFrame(data=components, columns=list_col)
+        return principalDf,pca.explained_variance_ratio_,pca.components_
+
+    def write_pca(self,output_filename=None):
+        file_handle = open(output_filename, 'a') if output_filename else stdout
+
+        file_handle.write('LIGFX:-------------------------------------------------\n')
+        file_handle.write('LIGFX: PCA variance\n')
+        print (self.variance)
+        print ('Somma varianze: %lf' % self.variance.sum())
+
+    def write_contribution(self,component=0,output_filename=None):
+        file_handle = open(output_filename, 'a') if output_filename else stdout
+        file_handle.write("Feature      -  Contribution to component %d\n" % (component + 1))
+        for ind in np.argsort(self.components[component])[::-1]:
+            file_handle.write("%s               %lf \n" % (self.LIGFX.names[ind], self.components[0][ind]))
 
 class LIGFX:
     def __init__(self, input_data_filename, normalise=True):
@@ -104,6 +133,7 @@ class LIGFX:
         self.predicted_y = None
         self.performance = None
         self.cross_validation_performance = None
+        self.names= list(self.input_x.columns.values)
 
     @staticmethod
     def __read_input(input_data_filename):
@@ -121,6 +151,7 @@ class LIGFX:
         self.training_y = y_training
         self.test_x = x_test
         self.test_y = y_test
+
 
     def create_classifier(self, method=LogisticRegression(solver="lbfgs"), classifier_name='LR'):
         self.classifier = method
@@ -153,3 +184,16 @@ class LIGFX:
     def run_cross_validation(self, n_fold=10, output_filename=None):
         self.cross_validation_performance = LIGFXCrossValPerformance(self, n_fold)
         self.cross_validation_performance.write_performance(output_filename)
+
+    def run_pca(self,n_components=3,output_filename=None):
+        self.pca_analysis = LIGFXPca(self,n_components)
+        self.pca_analysis.write_pca(output_filename)
+        return self.pca_analysis
+
+    def run_pca_curve(self,output_filename=None):
+        file_handle = open(output_filename, 'a') if output_filename else stdout
+        file_handle.write('LIGFX: PCA variance\n')
+        file_handle.write    ('N_components  -  Total Variance\n')
+        for i in range(2,40):
+            self.pca_analysis = LIGFXPca(self, i)
+            file_handle.write(' %d            %lf\n' % (i,self.pca_analysis.variance.sum()))
