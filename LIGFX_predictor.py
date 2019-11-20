@@ -1,7 +1,7 @@
 import sys
 from LIGFX import *
-from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier
+# from sklearn.svm import SVC
+# from sklearn.ensemble import RandomForestClassifier
 
 
 def prepare_dataset(input_data_filename):
@@ -13,17 +13,18 @@ def prepare_dataset(input_data_filename):
 def main(input_data_filename):
     ligfx_analysis = prepare_dataset(input_data_filename)
 
-    #ligfx_analysis.run_pca_curve()
-    ligfx_pca=ligfx_analysis.run_pca(3)
+    # ligfx_analysis.run_pca_curve()
+    ligfx_pca = ligfx_analysis.run_pca(3)
 
     ligfx_pca.write_contribution(0)
 
+
+'''
     classifier_dict = {
        'LR': LogisticRegression(solver="lbfgs"),
        'SVM': SVC(kernel='linear'),
        'RF': RandomForestClassifier(n_estimators=1000)
     }
-'''
     for (classifier_name, classifier_method) in classifier_dict.items():
         ligfx_analysis.create_classifier(classifier_method, classifier_name)
         ligfx_analysis.run_default_analysis()
