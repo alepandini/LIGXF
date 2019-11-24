@@ -87,31 +87,55 @@ class LIGFXCrossValPerformance:
             self.performance_table.to_csv(output_filename)
 
 
-class LIGFXPca:
-    def __init__(self, ligfx_object, n_components):
+class LIGFXPCAnalysis:
+    def __init__(self, ligfx_object):
         self.LIGFX = ligfx_object
-        self.pcadata, self.variance, self.components = self.principal_component(n_components)
+        self.pca_input_x = None
+        self.pca_variance = None
+        self.pca_cumulative_variance = None
+        self.pca_components = None
+        self.pca_n_essential_components = None
 
-    def principal_component(self, n_components):
-        pca = PCA(n_components=n_components, svd_solver='arpack')
-        components = pca.fit_transform(self.LIGFX.input_x)
-        list_col = ['principal component %d' % i for i in range(1, n_components + 1)]
-        principal_df = pd.DataFrame(data=components, columns=list_col)
-        return principal_df, pca.explained_variance_ratio_, pca.components_
+    def calculate_components(self):
+        n_features = self.LIGFX.n_input_features
+        pca = PCA(n_components=n_features, svd_solver='full')
+        scores = pca.fit_transform(self.LIGFX.input_x)
+        column_names = ['PC%d' % i for i in range(1, n_features + 1)]
+        scores_data_frame = pd.DataFrame(data=scores, columns=column_names)
+        self.pca_input_x = scores_data_frame
+        self.pca_variance = pca.explained_variance_ratio_
+        self.pca_cumulative_variance = np.cumsum(self.pca_variance)
+        self.pca_components = pca.components_
 
-    def write_pca(self, output_filename=None):
+    def select_components(self, n_components=0, percentage_threshold=80):
+        if n_components == 0:
+            n_components = 1 + np.argmax(self.pca_cumulative_variance > (percentage_threshold / 100))
+        self.pca_n_essential_components = n_components
+
+    def write_pca_results(self, output_filename=None):
         file_handle = open(output_filename, 'a') if output_filename else stdout
 
         file_handle.write('LIGFX:-------------------------------------------------\n')
-        file_handle.write('LIGFX: PCA variance\n')
-        print(self.variance)
-        print('Sum of variance: %lf' % self.variance.sum())
+        file_handle.write('LIGFX: PCA - Variance table\n')
+        file_handle.write('LIGFX: PC  variance cumulative_variance\n')
+        for i in range(len(self.pca_variance)):
+            print("LIGFX: %-4d%-9.3f%-8.3f" % (i + 1, self.pca_variance[i], self.pca_cumulative_variance[i]))
 
-    def write_contribution(self, component=0, output_filename=None):
+    def write_loadings(self, component=0, output_filename=None):
         file_handle = open(output_filename, 'a') if output_filename else stdout
-        file_handle.write("Feature      -  Contribution to component %d\n" % (component + 1))
-        for ind in np.argsort(self.components[component])[::-1]:
-            file_handle.write("%s               %lf \n" % (self.LIGFX.names[ind], self.components[0][ind]))
+
+        file_handle.write('LIGFX:-------------------------------------------------\n')
+        file_handle.write('LIGFX: PCA - Contribution to component %d\n' % (component + 1))
+        file_handle.write('LIGFX: Feature              loading\n')
+        for ind in np.argsort(self.pca_components[component])[::-1]:
+            file_handle.write("LIGFX: %-20s%8.3f \n" % (self.LIGFX.names[ind], self.pca_components[0][ind]))
+
+    def write_n_selected_components(self, output_filename=None):
+        file_handle = open(output_filename, 'a') if output_filename else stdout
+
+        file_handle.write('LIGFX:-------------------------------------------------\n')
+        file_handle.write('LIGFX: PCA \n')
+        file_handle.write('LIGFX: number of selected components: %d\n' % self.pca_n_essential_components)
 
 
 class LIGFX:
@@ -124,6 +148,7 @@ class LIGFX:
         else:
             self.input_x = self.input_data.drop('y', axis=1)
             self.input_y = self.input_data['y']
+        self.n_input_features = self.input_x.shape[1]
         self.training_x = None
         self.training_y = None
         self.test_x = None
@@ -186,15 +211,8 @@ class LIGFX:
         self.cross_validation_performance = LIGFXCrossValPerformance(self, n_fold)
         self.cross_validation_performance.write_performance(output_filename)
 
-    def run_pca(self, n_components=3, output_filename=None):
-        self.pca_analysis = LIGFXPca(self, n_components)
-        self.pca_analysis.write_pca(output_filename)
-        return self.pca_analysis
-
-    def run_pca_curve(self, output_filename=None):
-        file_handle = open(output_filename, 'a') if output_filename else stdout
-        file_handle.write('LIGFX: PCA variance\n')
-        file_handle.write('N_components  -  Total Variance\n')
-        for i in range(2, 40):
-            self.pca_analysis = LIGFXPca(self, i)
-            file_handle.write(' %d            %lf\n' % (i, self.pca_analysis.variance.sum()))
+    def run_pca(self, output_filename=None, n_components=0):
+        self.pca_analysis = LIGFXPCAnalysis(self)
+        self.pca_analysis.calculate_components()
+        self.pca_analysis.select_components(n_components)
+        self.pca_analysis.write_pca_results(output_filename)
