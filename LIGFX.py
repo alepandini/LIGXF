@@ -94,7 +94,7 @@ class LIGFXPCAnalysis:
         self.pca_variance = None
         self.pca_cumulative_variance = None
         self.pca_components = None
-        self.pca_n_essential_components = None
+        self.pca_n_essential_components = 0
 
     def calculate_components(self):
         n_features = self.LIGFX.n_input_features
@@ -108,11 +108,28 @@ class LIGFXPCAnalysis:
         self.pca_components = pca.components_
 
     def select_components(self, n_components=0, percentage_threshold=80):
+        if self.pca_cumulative_variance is None:
+            self.calculate_components()
         if n_components == 0:
             n_components = 1 + np.argmax(self.pca_cumulative_variance > (percentage_threshold / 100))
         self.pca_n_essential_components = n_components
 
+    def extract_reduced_data(self, n_components=0, percentage_threshold=80):
+        if self.pca_n_essential_components is 0:
+            self.select_components(n_components, percentage_threshold)
+        reduced_input_data = self.pca_input_x.iloc[:, :self.pca_n_essential_components].copy()
+        return reduced_input_data
+
+    def create_reduced_dataset(self, n_components=0, percentage_threshold=80):
+        input_data = self.extract_reduced_data(n_components, percentage_threshold)
+        input_data['y'] = self.LIGFX.input_y.copy()
+        reduced_ligfx = LIGFX(input_data, input_from_file=False)
+        return reduced_ligfx
+
     def write_pca_results(self, output_filename=None):
+        if self.pca_variance is None:
+            self.calculate_components()
+
         file_handle = open(output_filename, 'a') if output_filename else stdout
 
         file_handle.write('LIGFX:-------------------------------------------------\n')
@@ -121,7 +138,13 @@ class LIGFXPCAnalysis:
         for i in range(len(self.pca_variance)):
             print("LIGFX: %-4d%-9.3f%-8.3f" % (i + 1, self.pca_variance[i], self.pca_cumulative_variance[i]))
 
+        if file_handle is not stdout:
+            file_handle.close()
+
     def write_loadings(self, component=0, output_filename=None):
+        if self.pca_components is None:
+            self.calculate_components()
+
         file_handle = open(output_filename, 'a') if output_filename else stdout
 
         file_handle.write('LIGFX:-------------------------------------------------\n')
@@ -130,17 +153,29 @@ class LIGFXPCAnalysis:
         for ind in np.argsort(self.pca_components[component])[::-1]:
             file_handle.write("LIGFX: %-20s%8.3f \n" % (self.LIGFX.names[ind], self.pca_components[0][ind]))
 
-    def write_n_selected_components(self, output_filename=None):
+        if file_handle is not stdout:
+            file_handle.close()
+
+    def write_n_selected_components(self, output_filename=None, n_components=0, percentage_threshold=80):
+        if self.pca_n_essential_components is 0:
+            self.select_components(n_components, percentage_threshold)
+
         file_handle = open(output_filename, 'a') if output_filename else stdout
 
         file_handle.write('LIGFX:-------------------------------------------------\n')
         file_handle.write('LIGFX: PCA \n')
         file_handle.write('LIGFX: number of selected components: %d\n' % self.pca_n_essential_components)
 
+        if file_handle is not stdout:
+            file_handle.close()
+
 
 class LIGFX:
-    def __init__(self, input_data_filename, normalise=True):
-        self.input_data = self.__read_input(input_data_filename)
+    def __init__(self, input_data, normalise=True, input_from_file=True):
+        if input_from_file:
+            self.input_data = self.__read_input(input_data)
+        else:
+            self.input_data = input_data
         if normalise:
             self.norm_input_data = self.__normalise()
             self.input_x = self.norm_input_data.drop('y', axis=1)
@@ -211,8 +246,7 @@ class LIGFX:
         self.cross_validation_performance = LIGFXCrossValPerformance(self, n_fold)
         self.cross_validation_performance.write_performance(output_filename)
 
-    def run_pca(self, output_filename=None, n_components=0):
+    def run_pca(self, n_components=0):
         self.pca_analysis = LIGFXPCAnalysis(self)
         self.pca_analysis.calculate_components()
         self.pca_analysis.select_components(n_components)
-        self.pca_analysis.write_pca_results(output_filename)

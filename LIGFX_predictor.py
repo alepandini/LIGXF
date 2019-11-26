@@ -14,6 +14,8 @@ def exploratory_data_analysis(ligfx_analysis):
     ligfx_analysis.run_pca()
     ligfx_analysis.pca_analysis.write_loadings(0)
     ligfx_analysis.pca_analysis.write_n_selected_components()
+    reduced_ligfx_analysis = ligfx_analysis.pca_analysis.create_reduced_dataset()
+    return reduced_ligfx_analysis
 
 
 def prediction(ligfx_analysis):
@@ -31,8 +33,10 @@ def prediction(ligfx_analysis):
 
 def main(input_data_filename):
     ligfx_analysis = prepare_dataset(input_data_filename)
-    exploratory_data_analysis(ligfx_analysis)
-    # prediction(ligfx_analysis)
+    prediction(ligfx_analysis)
+    reduced_ligfx_analysis = exploratory_data_analysis(ligfx_analysis)
+    reduced_ligfx_analysis.holdout()
+    prediction(reduced_ligfx_analysis)
 
 
 if __name__ == '__main__':
