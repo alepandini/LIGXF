@@ -30,14 +30,26 @@ def prediction(ligfx_analysis):
         ligfx_analysis.run_cross_validation()
         # ligfx_analysis.cross_validation_performance.write_performance_csv("cross_val_%s.csv" % classifier_name)
 
+def cluster_analysis(ligfx_analysis):
+    cluster_dict = {
+        'KMeans': KMeans(n_clusters=2, random_state=0),
+        'Hierarchical': AgglomerativeClustering(n_clusters=2, affinity='euclidean',linkage='ward')
+    }
+    for (name, method) in cluster_dict.items():
+        cluster = LIGFXCluster(ligfx_analysis)
+        cluster_labels = cluster.make_cluster(method,name)
+        cluster.write_2_clusters_separation()
 
 def main(input_data_filename):
     ligfx_analysis = prepare_dataset(input_data_filename)
-    prediction(ligfx_analysis)
-    reduced_ligfx_analysis = exploratory_data_analysis(ligfx_analysis)
-    reduced_ligfx_analysis.holdout()
-    prediction(reduced_ligfx_analysis)
+    #prediction(ligfx_analysis)
+    #reduced_ligfx_analysis = exploratory_data_analysis(ligfx_analysis)
+    #reduced_ligfx_analysis.holdout()
+    #prediction(reduced_ligfx_analysis)
+    #cluster_analysis(ligfx_analysis)
+    statistic = LIGFXStatistics(ligfx_analysis)
 
+    #statistic.print_correlation()
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
