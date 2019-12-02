@@ -167,37 +167,47 @@ class LIGFXCluster:
         self.method = None
         self.name = None
         self.clusters = None
+        self.confusion_matrix = None
+        self.cluster_purity = None
 
     def run_cluster_analysis(self, method=KMeans(n_clusters=2, random_state=0), name='KMeans'):
         self.method = method
         self.name = name
         self.clusters = self.method.fit(self.LIGFX.input_x)
 
-    def write_2_clusters_separation(self, output_filename=None):
+        unique_labels = self.LIGFX.input_y.unique()
+        self.confusion_matrix = pd.DataFrame(data=np.zeros((self.clusters.n_clusters, len(unique_labels)), dtype=int))
+        for i in range(self.clusters.n_clusters):
+            for j in range(len(unique_labels)):
+                self.confusion_matrix.iloc[i, j] = np.array(
+                    self.LIGFX.input_y[self.clusters.labels_ == i] == unique_labels[j]).sum()
+        self.calculate_cluster_purity()
+
+    def calculate_cluster_purity(self, method=KMeans(n_clusters=2, random_state=0), name='KMeans'):
+        if self.method is None:
+            self.run_cluster_analysis(method=method, name=name)
+        self.cluster_purity = sum(self.confusion_matrix.max(axis=1))
+
+    def write_cluster_purity(self, output_filename=None, class_labels=None):
         file_handle = open(output_filename, 'a') if output_filename else stdout
 
-        pred = np.array([self.LIGFX.input_y[i] == self.clusters.labels_[i] for i in range(len(self.LIGFX.input_y))])
-        not_pred = np.invert(pred)
-
         file_handle.write('LIGFX:-------------------------------------------------\n')
-        file_handle.write('LIGFX: Cluster - %s | 2 clusters \n' % self.name)
-        file_handle.write('LIGFX: Maximum separation obtained: %d  over %d samples\n' % (max(pred.sum(),
-                                                                                             not_pred.sum()),
-                                                                                         len(self.LIGFX.input_y)))
-        cluster1_a, cluster1_i, cluster2_a, cluster2_i = 0, 0, 0, 0
-        for ind, cluster_id in enumerate(self.clusters.labels_):
-            if cluster_id:
-                if self.LIGFX.input_y[ind] == 0:
-                    cluster2_i += 1
-                else:
-                    cluster2_a += 1
-            else:
-                if self.LIGFX.input_y[ind] == 0:
-                    cluster1_i += 1
-                else:
-                    cluster1_a += 1
-        file_handle.write('LIGFX: Cluster 1:  %d  Inhibitors  %d Activators\n' % (cluster1_i, cluster1_a))
-        file_handle.write('LIGFX: Cluster 2:  %d  Inhibitors  %d Activators\n' % (cluster2_i, cluster2_a))
+        file_handle.write('LIGFX: Method:  %s \n' % self.name)
+        file_handle.write('LIGFX: n clusters: %d \n' % self.clusters.n_clusters)
+        file_handle.write('LIGFX: Maximum separation obtained: %d over %d samples\n' % (self.cluster_purity,
+                                                                                        len(self.LIGFX.input_y)))
+        if class_labels is None:
+            class_labels = self.LIGFX.input_y.unique()
+        file_handle.write('LIGFX:               ')
+        for i in range(len(class_labels)):
+            file_handle.write('%6s' % class_labels[i])
+        file_handle.write('\n')
+
+        for i in range(self.confusion_matrix.shape[0]):
+            file_handle.write('LIGFX: Cluster %3d  ' % i)
+            for j in range(self.confusion_matrix.shape[1]):
+                file_handle.write("%6d" % self.confusion_matrix.iloc[i, j])
+            file_handle.write('\n')
 
         if file_handle is not stdout:
             file_handle.close()

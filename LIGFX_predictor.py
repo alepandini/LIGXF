@@ -46,7 +46,7 @@ def cluster_analysis(ligfx_analysis):
     for (name, method) in cluster_dict.items():
         ligfx_cluster_analysis = LIGFXCluster(ligfx_analysis)
         ligfx_cluster_analysis.run_cluster_analysis(method, name)
-        ligfx_cluster_analysis.write_2_clusters_separation()
+        ligfx_cluster_analysis.write_cluster_purity(class_labels=["Inh", "Act"])
 
 
 def main(input_data_filename):
