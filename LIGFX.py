@@ -2,11 +2,9 @@ import pandas as pd
 import numpy as np
 from sys import stdout
 from scipy import stats
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_validate
+from sklearn.model_selection import train_test_split, cross_validate
 from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
-from sklearn.cluster import AgglomerativeClustering
+from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, \
     accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score
@@ -98,27 +96,41 @@ class LIGFXStatistics:
 
     def calculate_statistic(self):
         statistics = []
-        mean_tmp = self.LIGFX.input_x.mean()
-        std_tmp = self.LIGFX.input_x.std()
+        mean_vector = self.LIGFX.input_x.mean()
+        std_vector = self.LIGFX.input_x.std()
         for ind, element in enumerate(self.LIGFX.names, 0):
-            statistics.append((element, mean_tmp[ind], std_tmp[ind]))
+            statistics.append((element, mean_vector[ind], std_vector[ind]))
         quantiles = self.LIGFX.input_x.quantile([0.25, 0.5, 0.75])
         return statistics, quantiles
 
     def calculate_correlation(self):
         matrix = np.zeros([self.LIGFX.n_input_features, self.LIGFX.n_input_features], dtype=float)
-        for index in range(self.LIGFX.n_input_features):
-            for index2 in range(self.LIGFX.n_input_features):
-                matrix[index, index2] = stats.pearsonr(self.LIGFX.input_x.iloc[:, index],
-                                                       self.LIGFX.input_x.iloc[:, index2])[0]
+        for i in range(self.LIGFX.n_input_features):
+            for j in range(self.LIGFX.n_input_features):
+                matrix[i, j] = stats.pearsonr(self.LIGFX.input_x.iloc[:, i], self.LIGFX.input_x.iloc[:, j])[0]
         return matrix
 
-    def print_correlation(self, output_filename=None):
+    def write_correlation_matrix(self, output_filename=None):
         file_handle = open(output_filename, 'a') if output_filename else stdout
-        for line in self.correlation_mat:
-            for row in line:
-                file_handle.write("%lf\t" % row)
+
+        file_handle.write('LIGFX:-------------------------------------------------\n')
+        file_handle.write('LIGFX: correlation matrix\n')
+        file_handle.write('LIGFX:   legend:\n')
+        for i in range(self.LIGFX.n_input_features):
+            file_handle.write('LIGFX:      %2d %s\n' % ((i + 1), self.LIGFX.input_x.columns[i]))
+
+        for i in range(self.LIGFX.n_input_features):
+            file_handle.write("LIGFX:      %5d " % (i + 1))
+            for j in range(self.LIGFX.n_input_features):
+                file_handle.write("%8.3f " % self.correlation_mat[i, j])
             file_handle.write("\n")
+
+        if file_handle is not stdout:
+            file_handle.close()
+
+    def write_correlation_matrix_csv(self, output_filename=None):
+        if output_filename is not None:
+            pd.DataFrame(self.correlation_mat).to_csv(output_filename)
 
 
 class LIGFXCluster:

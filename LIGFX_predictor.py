@@ -49,9 +49,9 @@ def main(input_data_filename):
     # reduced_ligfx_analysis.holdout()
     # prediction(reduced_ligfx_analysis)
     # cluster_analysis(ligfx_analysis)
-    statistic = LIGFXStatistics(ligfx_analysis)
+    ligfx_statistics = LIGFXStatistics(ligfx_analysis)
 
-    # statistic.print_correlation()
+    ligfx_statistics.write_correlation_matrix()
 
 
 if __name__ == '__main__':
