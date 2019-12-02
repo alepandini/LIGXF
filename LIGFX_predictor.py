@@ -51,8 +51,6 @@ def main(input_data_filename):
     # cluster_analysis(ligfx_analysis)
     ligfx_statistics = LIGFXStatistics(ligfx_analysis)
 
-    ligfx_statistics.write_correlation_matrix()
-
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:

@@ -91,17 +91,21 @@ class LIGFXCrossValPerformance:
 class LIGFXStatistics:
     def __init__(self, ligfx_object):
         self.LIGFX = ligfx_object
-        self.means, self.quantiles = self.calculate_statistic()
+        self.summary_stat = self.calculate_statistic()
         self.correlation_mat = self.calculate_correlation()
 
     def calculate_statistic(self):
-        statistics = []
-        mean_vector = self.LIGFX.input_x.mean()
-        std_vector = self.LIGFX.input_x.std()
-        for ind, element in enumerate(self.LIGFX.names, 0):
-            statistics.append((element, mean_vector[ind], std_vector[ind]))
-        quantiles = self.LIGFX.input_x.quantile([0.25, 0.5, 0.75])
-        return statistics, quantiles
+        summary_stat = pd.concat(
+            [self.LIGFX.input_x.min(),
+             self.LIGFX.input_x.quantile([0.25]).transpose(),
+             self.LIGFX.input_x.mean(),
+             self.LIGFX.input_x.median(),
+             self.LIGFX.input_x.quantile([0.75]).transpose(),
+             self.LIGFX.input_x.max(),
+             self.LIGFX.input_x.std()],
+            axis=1)
+        summary_stat.columns = ["min", "Q1", "mean", "median", "Q3", "max", "std"]
+        return summary_stat
 
     def calculate_correlation(self):
         matrix = np.zeros([self.LIGFX.n_input_features, self.LIGFX.n_input_features], dtype=float)
@@ -128,9 +132,33 @@ class LIGFXStatistics:
         if file_handle is not stdout:
             file_handle.close()
 
+    def write_summary_stat_matrix(self, output_filename=None):
+        file_handle = open(output_filename, 'a') if output_filename else stdout
+
+        file_handle.write('LIGFX:-------------------------------------------------\n')
+        file_handle.write('LIGFX: summary stat\n')
+
+        file_handle.write('LIGFX:                ')
+        for j in range(self.summary_stat.shape[1]):
+            file_handle.write("%8s" % self.summary_stat.columns[j])
+        file_handle.write('\n')
+
+        for i in range(self.summary_stat.shape[0]):
+            file_handle.write('LIGFX: %15s' % self.summary_stat.index[i])
+            for j in range(self.summary_stat.shape[1]):
+                file_handle.write("%8.3f" % self.summary_stat.iloc[i, j])
+            file_handle.write('\n')
+
+        if file_handle is not stdout:
+            file_handle.close()
+
     def write_correlation_matrix_csv(self, output_filename=None):
         if output_filename is not None:
             pd.DataFrame(self.correlation_mat).to_csv(output_filename)
+
+    def write_summary_stat_csv(self, output_filename=None):
+        if output_filename is not None:
+            pd.DataFrame(self.summary_stat).to_csv(output_filename)
 
 
 class LIGFXCluster:
