@@ -2,12 +2,19 @@ import sys
 from LIGFX import *
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.cluster import AgglomerativeClustering
 
 
 def prepare_dataset(input_data_filename):
     ligfx_analysis = LIGFX(input_data_filename)
     ligfx_analysis.holdout()
     return ligfx_analysis
+
+
+def summary_statistics(ligfx_analysis):
+    ligfx_statistics = LIGFXStatistics(ligfx_analysis)
+    ligfx_statistics.write_summary_stat_matrix()
+    ligfx_statistics.write_correlation_matrix()
 
 
 def exploratory_data_analysis(ligfx_analysis):
@@ -37,19 +44,19 @@ def cluster_analysis(ligfx_analysis):
         'Hierarchical': AgglomerativeClustering(n_clusters=2, affinity='euclidean', linkage='ward')
     }
     for (name, method) in cluster_dict.items():
-        cluster = LIGFXCluster(ligfx_analysis)
-        cluster_labels = cluster.make_cluster(method, name)
-        cluster.write_2_clusters_separation()
+        ligfx_cluster_analysis = LIGFXCluster(ligfx_analysis)
+        ligfx_cluster_analysis.run_cluster_analysis(method, name)
+        ligfx_cluster_analysis.write_2_clusters_separation()
 
 
 def main(input_data_filename):
     ligfx_analysis = prepare_dataset(input_data_filename)
+    # summary_statistics(ligfx_analysis)
+    cluster_analysis(ligfx_analysis)
     # prediction(ligfx_analysis)
     # reduced_ligfx_analysis = exploratory_data_analysis(ligfx_analysis)
     # reduced_ligfx_analysis.holdout()
     # prediction(reduced_ligfx_analysis)
-    # cluster_analysis(ligfx_analysis)
-    ligfx_statistics = LIGFXStatistics(ligfx_analysis)
 
 
 if __name__ == '__main__':

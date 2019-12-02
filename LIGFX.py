@@ -4,7 +4,7 @@ from sys import stdout
 from scipy import stats
 from sklearn.model_selection import train_test_split, cross_validate
 from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.cluster import KMeans
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, \
     accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score
@@ -126,7 +126,7 @@ class LIGFXStatistics:
         for i in range(self.LIGFX.n_input_features):
             file_handle.write("LIGFX:      %5d " % (i + 1))
             for j in range(self.LIGFX.n_input_features):
-                file_handle.write("%8.3f " % self.correlation_mat[i, j])
+                file_handle.write("%5.2f " % self.correlation_mat[i, j])
             file_handle.write("\n")
 
         if file_handle is not stdout:
@@ -168,24 +168,17 @@ class LIGFXCluster:
         self.name = None
         self.clusters = None
 
-    def make_cluster(self, method=KMeans(n_clusters=2, random_state=0), name='KMeans'):
+    def run_cluster_analysis(self, method=KMeans(n_clusters=2, random_state=0), name='KMeans'):
         self.method = method
         self.name = name
         self.clusters = self.method.fit(self.LIGFX.input_x)
-        return self.clusters.labels_
-
-    def calculate_kmeans(self, n_clusters=2, random_state=1):
-        self.clusters = KMeans(n_clusters=n_clusters, random_state=random_state).fit(self.LIGFX.input_x)
-        return self.clusters.cluster_centers_, self.clusters.labels_
-
-    def calculate_hierarchical(self, n_clusters=2, metric='euclidean', linkage='average'):
-        self.clusters = AgglomerativeClustering(n_clusters=n_clusters, affinity=metric, linkage=linkage)
-        return self.clusters.labels_
 
     def write_2_clusters_separation(self, output_filename=None):
         file_handle = open(output_filename, 'a') if output_filename else stdout
+
         pred = np.array([self.LIGFX.input_y[i] == self.clusters.labels_[i] for i in range(len(self.LIGFX.input_y))])
         not_pred = np.invert(pred)
+
         file_handle.write('LIGFX:-------------------------------------------------\n')
         file_handle.write('LIGFX: Cluster - %s | 2 clusters \n' % self.name)
         file_handle.write('LIGFX: Maximum separation obtained: %d  over %d samples\n' % (max(pred.sum(),
@@ -205,6 +198,9 @@ class LIGFXCluster:
                     cluster1_a += 1
         file_handle.write('LIGFX: Cluster 1:  %d  Inhibitors  %d Activators\n' % (cluster1_i, cluster1_a))
         file_handle.write('LIGFX: Cluster 2:  %d  Inhibitors  %d Activators\n' % (cluster2_i, cluster2_a))
+
+        if file_handle is not stdout:
+            file_handle.close()
 
 
 class LIGFXPCAnalysis:
