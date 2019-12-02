@@ -89,26 +89,31 @@ class LIGFXCrossValPerformance:
         if output_filename is not None:
             self.performance_table.to_csv(output_filename)
 
+
 class LIGFXStatistics:
-    def __init__(self,ligfx_object):
+    def __init__(self, ligfx_object):
         self.LIGFX = ligfx_object
-        self.means,self.quantiles  = self.calculate_statistic()
+        self.means, self.quantiles = self.calculate_statistic()
         self.correlation_mat = self.calculate_correlation()
+
     def calculate_statistic(self):
-        statistics=[]
+        statistics = []
         mean_tmp = self.LIGFX.input_x.mean()
-        std_tmp  = self.LIGFX.input_x.std()
-        for ind, element in enumerate(self.LIGFX.names,0):
-            statistics.append((element,mean_tmp[ind],std_tmp[ind]))
+        std_tmp = self.LIGFX.input_x.std()
+        for ind, element in enumerate(self.LIGFX.names, 0):
+            statistics.append((element, mean_tmp[ind], std_tmp[ind]))
         quantiles = self.LIGFX.input_x.quantile([0.25, 0.5, 0.75])
-        return statistics,quantiles
+        return statistics, quantiles
+
     def calculate_correlation(self):
-        matrix=np.zeros([self.LIGFX.n_input_features,self.LIGFX.n_input_features],dtype=float)
+        matrix = np.zeros([self.LIGFX.n_input_features, self.LIGFX.n_input_features], dtype=float)
         for index in range(self.LIGFX.n_input_features):
             for index2 in range(self.LIGFX.n_input_features):
-                matrix[index,index2]=stats.pearsonr(self.LIGFX.input_x.iloc[:, index],self.LIGFX.input_x.iloc[:,index2])[0]
+                matrix[index, index2] = stats.pearsonr(self.LIGFX.input_x.iloc[:, index],
+                                                       self.LIGFX.input_x.iloc[:, index2])[0]
         return matrix
-    def print_correlation(self,output_filename=None):
+
+    def print_correlation(self, output_filename=None):
         file_handle = open(output_filename, 'a') if output_filename else stdout
         for line in self.correlation_mat:
             for row in line:
@@ -117,31 +122,38 @@ class LIGFXStatistics:
 
 
 class LIGFXCluster:
-    def __init__(self,ligfx_object):
+    def __init__(self, ligfx_object):
         self.LIGFX = ligfx_object
+        self.method = None
+        self.name = None
+        self.clusters = None
 
-    def make_cluster(self,method = KMeans(n_clusters=2, random_state=0),name ='KMeans'):
-        self.method   = method
-        self.name     = name
+    def make_cluster(self, method=KMeans(n_clusters=2, random_state=0), name='KMeans'):
+        self.method = method
+        self.name = name
         self.clusters = self.method.fit(self.LIGFX.input_x)
-        return  self.clusters.labels_
-    def calculate_kmeans(self, n_clusters = 2,random_state=1):
-        self.clusters = KMeans(n_clusters= n_clusters, random_state= random_state).fit(self.LIGFX.input_x)
-        return self.clusters.cluster_centers_, self.clusters.labels_
-    def calculate_hierarchical(self,n_clusters = 2, metric = 'euclidean', linkage = 'average'):
-        self.clusters = AgglomerativeClustering(n_clusters= n_clusters, affinity= metric,linkage= linkage)
         return self.clusters.labels_
-    #def write_cluster(self, ):
-    def write_2_clusters_separation(self,output_filename=None):
+
+    def calculate_kmeans(self, n_clusters=2, random_state=1):
+        self.clusters = KMeans(n_clusters=n_clusters, random_state=random_state).fit(self.LIGFX.input_x)
+        return self.clusters.cluster_centers_, self.clusters.labels_
+
+    def calculate_hierarchical(self, n_clusters=2, metric='euclidean', linkage='average'):
+        self.clusters = AgglomerativeClustering(n_clusters=n_clusters, affinity=metric, linkage=linkage)
+        return self.clusters.labels_
+
+    def write_2_clusters_separation(self, output_filename=None):
         file_handle = open(output_filename, 'a') if output_filename else stdout
         pred = np.array([self.LIGFX.input_y[i] == self.clusters.labels_[i] for i in range(len(self.LIGFX.input_y))])
         not_pred = np.invert(pred)
         file_handle.write('LIGFX:-------------------------------------------------\n')
-        file_handle.write('LIGFX: Cluster - %s | 2 clusters \n' % (self.name))
-        file_handle.write('LIGFX: Maximum separation obtained: %d  over %d samples\n' % (max(pred.sum(),not_pred.sum()),len(self.LIGFX.input_y)))
-        cluster1_a,cluster1_i,cluster2_a,cluster2_i= 0,0,0,0
-        for ind,clust_id in enumerate(self.clusters.labels_):
-            if clust_id:
+        file_handle.write('LIGFX: Cluster - %s | 2 clusters \n' % self.name)
+        file_handle.write('LIGFX: Maximum separation obtained: %d  over %d samples\n' % (max(pred.sum(),
+                                                                                             not_pred.sum()),
+                                                                                         len(self.LIGFX.input_y)))
+        cluster1_a, cluster1_i, cluster2_a, cluster2_i = 0, 0, 0, 0
+        for ind, cluster_id in enumerate(self.clusters.labels_):
+            if cluster_id:
                 if self.LIGFX.input_y[ind] == 0:
                     cluster2_i += 1
                 else:
@@ -151,10 +163,8 @@ class LIGFXCluster:
                     cluster1_i += 1
                 else:
                     cluster1_a += 1
-        file_handle.write('LIGFX: Cluster 1:  %d  Inhibitors  %d Activators\n' % (cluster1_i,cluster1_a))
-        file_handle.write('LIGFX: Cluster 2:  %d  Inhibitors  %d Activators\n' % (cluster2_i,cluster2_a))
-
-
+        file_handle.write('LIGFX: Cluster 1:  %d  Inhibitors  %d Activators\n' % (cluster1_i, cluster1_a))
+        file_handle.write('LIGFX: Cluster 2:  %d  Inhibitors  %d Activators\n' % (cluster2_i, cluster2_a))
 
 
 class LIGFXPCAnalysis:
