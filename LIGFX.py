@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sys import stdout
 from scipy import stats
-from sklearn.model_selection import train_test_split, cross_validate
+from sklearn.model_selection import train_test_split, cross_validate, cross_val_predict
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.linear_model import LogisticRegression
@@ -56,15 +56,16 @@ class LIGFXPerformance:
 class LIGFXCrossValPerformance:
     def __init__(self, ligfx_object, n_fold=10):
         self.LIGFX = ligfx_object
-        self.performance_table = self.cross_validation(n_fold)
+        self.performance_table, self.predict = self.cross_validation(n_fold)
 
     def cross_validation(self, n_fold=10):
         scoring = list(performance_measures.keys())
 
         cv_scores = cross_validate(self.LIGFX.classifier, self.LIGFX.input_x, self.LIGFX.input_y,
                                    cv=n_fold, scoring=scoring, return_train_score=True)
+        cv_predict= cross_val_predict(self.LIGFX.classifier, self.LIGFX.input_x, y=self.LIGFX.input_y, cv=n_fold)
         cv_data = pd.DataFrame.from_dict(cv_scores)
-        return cv_data
+        return cv_data, cv_predict
 
     def write_performance(self, output_filename=None):
         file_handle = open(output_filename, 'a') if output_filename else stdout
@@ -295,6 +296,12 @@ class LIGFXPCAnalysis:
         if file_handle is not stdout:
             file_handle.close()
 
+    def write_scores(self, output_filename=None):
+        if output_filename:
+            self.pca_input_x.to_csv(output_filename)
+        else:
+            stdout.write("Error: No pca outfile selected!\n")
+
 
 class LIGFX:
     def __init__(self, input_data, normalise=True, input_from_file=True):
@@ -371,6 +378,9 @@ class LIGFX:
     def run_cross_validation(self, n_fold=10, output_filename=None):
         self.cross_validation_performance = LIGFXCrossValPerformance(self, n_fold)
         self.cross_validation_performance.write_performance(output_filename)
+        prediction=np.array([predict == real for predict, real in zip(self.cross_validation_performance.predict, self.input_y)])
+        return prediction
+
 
     def run_pca(self, n_components=0):
         self.pca_analysis = LIGFXPCAnalysis(self)
