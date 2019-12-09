@@ -43,21 +43,23 @@ def prediction(ligfx_analysis, folder_path, out_prefix):
     featureimportance_filename = folder_path + out_prefix + "_" + "Fimportances_"
     crossvalidation_filename = folder_path + out_prefix + "_" + "crossvalidation_"
     prediction_filename = folder_path + out_prefix + "_" + "cv_predictions.dat"
-    outfile = open(prediction_filename,"w")
+    outfile = open(prediction_filename, "w")
     outfile.write("%5s %5s %5s\n" % ('LR', 'SVM', 'RF'))
-    predictions={}
+    predictions = {}
     stdout.write("LIGFX:------------PREDICTIONS-------------\n")
     for (classifier_name, classifier_method) in classifier_dict.items():
         ligfx_analysis.create_classifier(classifier_method, classifier_name)
         ligfx_analysis.run_default_analysis()
         predictions[classifier_name] = ligfx_analysis.run_cross_validation()
-        ligfx_analysis.cross_validation_performance.write_performance_csv(crossvalidation_filename + classifier_name + ".csv")
-        if classifier_name == "RF" :
-            PrintCoeff(featureimportance_filename, classifier_name, ligfx_analysis.classifier.feature_importances_)
+        ligfx_analysis.cross_validation_performance.write_performance_csv(crossvalidation_filename +
+                                                                          classifier_name + ".csv")
+        if classifier_name == "RF":
+            print_coefficients(featureimportance_filename, classifier_name,
+                               ligfx_analysis.classifier.feature_importances_)
         else:
-            PrintCoeff(featureimportance_filename, classifier_name, ligfx_analysis.classifier.coef_[0])
+            print_coefficients(featureimportance_filename, classifier_name, ligfx_analysis.classifier.coef_[0])
     for lr, svm, rf in zip(predictions['LR'], predictions['SVM'], predictions['RF']):
-        outfile.write("%5s %5s %5s\n" % (lr,svm,rf))
+        outfile.write("%5s %5s %5s\n" % (lr, svm, rf))
     outfile.close()
     
 
@@ -108,11 +110,11 @@ def main():
     prediction(reduced_ligfx_analysis, folder_path, "reduced")
 
 
-def PrintCoeff(filename, name, vector):
-    importancefile = open(filename + name + '.dat','w')
-    for coeff in vector:
-        importancefile.write('%.4f\n' % coeff)
-    importancefile.close()
+def print_coefficients(filename, name, vector):
+    importance_filename = open(filename + name + '.dat', 'w')
+    for variable_weight in vector:
+        importance_filename.write('%.4f\n' % variable_weight)
+    importance_filename.close()
 
 
 if __name__ == '__main__':

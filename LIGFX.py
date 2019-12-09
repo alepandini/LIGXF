@@ -63,7 +63,7 @@ class LIGFXCrossValPerformance:
 
         cv_scores = cross_validate(self.LIGFX.classifier, self.LIGFX.input_x, self.LIGFX.input_y,
                                    cv=n_fold, scoring=scoring, return_train_score=True)
-        cv_predict= cross_val_predict(self.LIGFX.classifier, self.LIGFX.input_x, y=self.LIGFX.input_y, cv=n_fold)
+        cv_predict = cross_val_predict(self.LIGFX.classifier, self.LIGFX.input_x, y=self.LIGFX.input_y, cv=n_fold)
         cv_data = pd.DataFrame.from_dict(cv_scores)
         return cv_data, cv_predict
 
@@ -378,9 +378,9 @@ class LIGFX:
     def run_cross_validation(self, n_fold=10, output_filename=None):
         self.cross_validation_performance = LIGFXCrossValPerformance(self, n_fold)
         self.cross_validation_performance.write_performance(output_filename)
-        prediction=np.array([predict == real for predict, real in zip(self.cross_validation_performance.predict, self.input_y)])
+        prediction = np.array([predict == real for predict, real in
+                               zip(self.cross_validation_performance.predict, self.input_y)])
         return prediction
-
 
     def run_pca(self, n_components=0):
         self.pca_analysis = LIGFXPCAnalysis(self)
