@@ -330,6 +330,25 @@ class LIGFX:
         self.names = list(self.input_x.columns.values)
         self.pca_analysis = None
 
+    def __del__(self):
+        
+        self.input_data = None
+        self.input_x = None
+        self.input_y = None
+        self.n_input_features = None
+        self.training_x = None
+        self.training_y = None
+        self.test_x = None
+        self.test_y = None
+        self.classifier = None
+        self.classifier_name = None
+        self.trained = False
+        self.predicted_y = None
+        self.performance = None
+        self.cross_validation_performance = None
+        self.names = None
+        self.pca_analysis = None
+
     @staticmethod
     def __read_input(input_data_filename):
         input_data = pd.read_csv(input_data_filename, header=0)
@@ -339,9 +358,9 @@ class LIGFX:
         norm_data = (self.input_data - self.input_data.min()) / (self.input_data.max() - self.input_data.min())
         return norm_data
 
-    def holdout(self, test_percentage=30):
+    def holdout(self, test_percentage=30, seed = 0, strat= None):
         x_training, x_test, y_training, y_test = train_test_split(
-            self.input_x, self.input_y, test_size=(test_percentage/100), random_state=0)
+            self.input_x, self.input_y, test_size=(test_percentage/100), random_state=seed, stratify = strat)
         self.training_x = x_training
         self.training_y = y_training
         self.test_x = x_test
@@ -370,10 +389,13 @@ class LIGFX:
             print("Warning: the model was not trained.")
             return 1
 
-    def run_default_analysis(self, output_filename=None):
+    def run_default_analysis(self, output_filename=None, write= True):
         self.run_training()
         self.run_prediction()
-        self.performance.write_performance(output_filename)
+        if write:
+            self.performance.write_performance(output_filename)
+        else:
+            return self.performance.get_performance_score(performance_measures['balanced_accuracy'])
 
     def run_cross_validation(self, n_fold=10, output_filename=None):
         self.cross_validation_performance = LIGFXCrossValPerformance(self, n_fold)

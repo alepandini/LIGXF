@@ -62,11 +62,41 @@ def prediction(ligfx_analysis, folder_path, out_prefix):
         outfile.write("%5s %5s %5s\n" % (lr, svm, rf))
     outfile.close()
     
+def progressive_holdout(ligfx_analysis, folder_path, out_prefix):	
+	
+	filename = folder_path + out_prefix + "_" + "accuracy_" + str(100) + ".dat"
+	outfile = open(filename, "w")
+	
+	for i in range(10):
+		ligfx_analysis.holdout(seed= i)
+		ligfx_analysis.create_classifier(SVC(kernel='linear'),'SVM')
+		outfile.write(str(ligfx_analysis.run_default_analysis(write=False)) +"\n")
+	outfile.close()
+	
+	for ind in range(4):
+		
+		filename = folder_path + out_prefix + "_" + "accuracy_" + str(100 - 20 * (ind +1)) + ".dat"
+		outfile = open(filename, "w")
+		# Do 10 runs
+		for i in range(10):
+			appo = LIGFX(ligfx_analysis.input_data.copy(), input_from_file=None)		
+			appo.holdout(test_percentage=20 * (ind +1),seed= i)
+			appo.input_x = appo.training_x
+			appo.input_y = appo.training_y
+			print (len(appo.training_x))
+
+
+			appo.holdout()
+			appo.create_classifier(SVC(kernel='linear'),'SVM')
+			print (len(appo.training_x))
+			outfile.write(str(appo.run_default_analysis(write=False)) +"\n")
+		outfile.close()
+		
 
 def cluster_analysis(ligfx_analysis, folder_path, out_prefix):
     cluster_dict = {
-        'KMeans': KMeans(n_clusters=2, random_state=0),
-        'Hierarchical': AgglomerativeClustering(n_clusters=2, affinity='euclidean', linkage='ward')
+        'KMeans': KMeans(n_clusters=10, random_state=0),
+        'Hierarchical': AgglomerativeClustering(n_clusters=10, affinity='euclidean', linkage='ward')
     }
     cluster_filename = folder_path + out_prefix + "_Cluster.dat"
     stdout.write("LIGFX:---------------CLUSTER--ANALYSIS---------------\n")
@@ -104,11 +134,11 @@ def main():
 
     summary_statistics(ligfx_analysis, folder_path, out_prefix)
     cluster_analysis(ligfx_analysis, folder_path, out_prefix)
-    prediction(ligfx_analysis, folder_path, out_prefix)
-    reduced_ligfx_analysis = exploratory_data_analysis(ligfx_analysis, folder_path, out_prefix)
-    reduced_ligfx_analysis.holdout()
-    prediction(reduced_ligfx_analysis, folder_path, "reduced")
-
+    #prediction(ligfx_analysis, folder_path, out_prefix)
+    #reduced_ligfx_analysis = exploratory_data_analysis(ligfx_analysis, folder_path, out_prefix)
+    #reduced_ligfx_analysis.holdout()
+    #prediction(reduced_ligfx_analysis, folder_path, "reduced")
+    #progressive_holdout(ligfx_analysis, folder_path, out_prefix)
 
 def print_coefficients(filename, name, vector):
     importance_filename = open(filename + name + '.dat', 'w')
