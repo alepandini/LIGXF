@@ -5,7 +5,7 @@
     @author        : Filippo Marchetti
 
     
-     This file is part of the LIGFX distribution (https://github.com/alepandini/LIGXF).
+     This file is part of the LIGXF distribution (https://github.com/alepandini/LIGXF).
      Copyright (c) 2020-21 Filippo Marchetti, Giorgio Colombo and Alessandro Pandini.
 
      This program is free software: you can redistribute it and/or modify 
